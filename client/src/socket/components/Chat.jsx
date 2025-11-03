@@ -1,9 +1,44 @@
+import { useState, useEffect } from 'react';
 import { useSocket } from '../socket';
 import UserList from './UserList';
 import ChatWindow from './ChatWindow';
+import RoomList from './RoomList';
 
 const Chat = ({ username, onLogout }) => {
-  const { users, messages, typingUsers, sendMessage, setTyping, sendPrivateMessage } = useSocket();
+  const [currentRoom, setCurrentRoom] = useState('general');
+  const { 
+    users, 
+    messages, 
+    rooms, 
+    typingUsers, 
+    sendMessage, 
+    setTyping, 
+    sendPrivateMessage, 
+    createRoom: createNewRoom,
+    joinRoom 
+  } = useSocket();
+
+  // Handle room creation
+  const handleCreateRoom = (roomName) => {
+    if (roomName.trim()) {
+      createNewRoom(roomName.trim());
+    }
+  };
+
+  // Handle room change
+  const handleRoomChange = (roomId) => {
+    if (roomId !== currentRoom) {
+      setCurrentRoom(roomId);
+      joinRoom(roomId);
+    }
+  };
+
+  // Join default room on component mount
+  useEffect(() => {
+    if (currentRoom === 'general') {
+      joinRoom('general');
+    }
+  }, []);
 
   return (
     <div className="flex h-full flex-col bg-gray-800">
@@ -26,8 +61,21 @@ const Chat = ({ username, onLogout }) => {
       {/* Main chat body */}
       <main className="flex flex-grow overflow-hidden">
         {/* Sidebar */}
-        <div className="w-64 flex-shrink-0 overflow-y-auto border-r border-gray-700 bg-gray-800 p-4">
-          <UserList users={users} sendPrivateMessage={sendPrivateMessage} />
+        <div className="w-64 flex-shrink-0 flex flex-col overflow-hidden border-r border-gray-700 bg-gray-800">
+          {/* Rooms section */}
+          <div className="p-4 border-b border-gray-700">
+            <RoomList
+              rooms={rooms}
+              currentRoom={currentRoom}
+                onRoomChange={handleRoomChange}
+                onCreateRoom={handleCreateRoom}
+            />
+          </div>
+          
+          {/* Users section */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <UserList users={users} sendPrivateMessage={sendPrivateMessage} />
+          </div>
         </div>
 
         {/* Chat Content */}

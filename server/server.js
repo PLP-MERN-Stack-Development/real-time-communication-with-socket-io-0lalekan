@@ -28,19 +28,62 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Store connected users and messages
 const users = {};
+const rooms = {
+  general: {
+    id: 'general',
+    name: 'General Chat',
+    messages: [],
+    users: new Set(),
+  }
+};
 const messages = [];
 const typingUsers = {};
 
 // Socket.io connection handler
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
+  let currentRoom = 'general';
 
   // Handle user joining
   socket.on('user_join', (username) => {
     users[socket.id] = { username, id: socket.id };
+    socket.join('general'); // Join default room
+    rooms.general.users.add(socket.id);
+    
     io.emit('user_list', Object.values(users));
+    io.emit('room_list', Object.values(rooms));
     io.emit('user_joined', { username, id: socket.id });
     console.log(`${username} joined the chat`);
+  });
+
+  // Handle room creation
+  socket.on('create_room', (roomName) => {
+    const roomId = roomName.toLowerCase().replace(/\s+/g, '-');
+    if (!rooms[roomId]) {
+      rooms[roomId] = {
+        id: roomId,
+        name: roomName,
+        messages: [],
+        users: new Set(),
+      };
+      io.emit('room_list', Object.values(rooms));
+    }
+  });
+
+  // Handle room joining
+  socket.on('join_room', (roomId) => {
+    if (rooms[roomId]) {
+      socket.leave(currentRoom);
+      rooms[currentRoom].users.delete(socket.id);
+      
+      socket.join(roomId);
+      rooms[roomId].users.add(socket.id);
+      currentRoom = roomId;
+      
+      // Send room history
+      socket.emit('message_history', rooms[roomId].messages);
+      io.to(roomId).emit('user_list', Array.from(rooms[roomId].users).map(id => users[id]));
+    }
   });
 
   // Handle chat messages
@@ -51,16 +94,21 @@ io.on('connection', (socket) => {
       sender: users[socket.id]?.username || 'Anonymous',
       senderId: socket.id,
       timestamp: new Date().toISOString(),
+      roomId: currentRoom
     };
     
-    messages.push(message);
-    
-    // Limit stored messages to prevent memory issues
-    if (messages.length > 100) {
-      messages.shift();
+    // Add message to room history
+    if (rooms[currentRoom]) {
+      rooms[currentRoom].messages.push(message);
+      
+      // Limit stored messages to prevent memory issues
+      if (rooms[currentRoom].messages.length > 100) {
+        rooms[currentRoom].messages.shift();
+      }
+      
+      // Emit only to users in the current room
+      io.to(currentRoom).emit('receive_message', message);
     }
-    
-    io.emit('receive_message', message);
   });
 
   // Handle typing indicator
