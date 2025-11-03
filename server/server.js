@@ -132,11 +132,13 @@ io.on('connection', (socket) => {
       id: Date.now(),
       sender: users[socket.id]?.username || 'Anonymous',
       senderId: socket.id,
+      to, // recipient socket id
       message,
       timestamp: new Date().toISOString(),
       isPrivate: true,
     };
-    
+
+    // Emit to recipient and sender (so both have the message)
     socket.to(to).emit('private_message', messageData);
     socket.emit('private_message', messageData);
   });

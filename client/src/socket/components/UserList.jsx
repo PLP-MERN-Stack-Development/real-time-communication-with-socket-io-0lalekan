@@ -1,11 +1,18 @@
 import { socket } from '../socket'; // Import socket to check self
 
-const UserList = ({ users, sendPrivateMessage }) => {
+const UserList = ({ users, sendPrivateMessage, onOpenPrivate }) => {
 
   const handleUserClick = (user) => {
     // Don't allow messaging self
     if (user.id === socket.id) return;
-    
+
+    // If caller provided an open-private callback, invoke it (preferred)
+    if (onOpenPrivate) {
+      onOpenPrivate(user);
+      return;
+    }
+
+    // Fallback: prompt for a single quick message
     const message = prompt(`Send private message to ${user.username}:`);
     if (message) {
       // Use the function from our hook

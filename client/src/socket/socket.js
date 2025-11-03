@@ -37,6 +37,7 @@ export const useSocket = () => {
   const [rooms, setRooms] = useState([
     { id: 'general', name: 'General Chat', unreadCount: 0 }
   ]);
+  const [directMessages, setDirectMessages] = useState({}); // { peerId: [msg, ...] }
   const [typingUsers, setTypingUsers] = useState([]);
 
   // Connect to socket server
@@ -106,7 +107,15 @@ export const useSocket = () => {
 
     const onPrivateMessage = (message) => {
       setLastMessage(message);
-      setMessages((prev) => [...prev, message]);
+      // Determine peer id for storing the private conversation
+      const peerId = (message.senderId === socket.id) ? message.to : message.senderId;
+      if (!peerId) return; // defensive
+
+      setDirectMessages((prev) => {
+        const conv = prev[peerId] ? [...prev[peerId]] : [];
+        conv.push(message);
+        return { ...prev, [peerId]: conv };
+      });
     };
 
     // User events
@@ -156,7 +165,7 @@ export const useSocket = () => {
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('receive_message', onReceiveMessage);
-    socket.on('private_message', onPrivateMessage);
+  socket.on('private_message', onPrivateMessage);
     socket.on('user_list', onUserList);
     socket.on('user_joined', onUserJoined);
     socket.on('user_left', onUserLeft);
@@ -169,7 +178,7 @@ export const useSocket = () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('receive_message', onReceiveMessage);
-      socket.off('private_message', onPrivateMessage);
+  socket.off('private_message', onPrivateMessage);
       socket.off('user_list', onUserList);
       socket.off('user_joined', onUserJoined);
       socket.off('user_left', onUserLeft);
@@ -184,6 +193,8 @@ export const useSocket = () => {
     lastMessage,
     messages,
     users,
+    socketId: socket.id,
+    directMessages,
     rooms,
     typingUsers,
     connect,

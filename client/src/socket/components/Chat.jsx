@@ -3,6 +3,7 @@ import { useSocket } from '../socket';
 import UserList from './UserList';
 import ChatWindow from './ChatWindow';
 import RoomList from './RoomList';
+import PrivateChat from './PrivateChat';
 
 const Chat = ({ username, onLogout }) => {
   const [currentRoom, setCurrentRoom] = useState('general');
@@ -15,8 +16,24 @@ const Chat = ({ username, onLogout }) => {
     setTyping, 
     sendPrivateMessage, 
     createRoom: createNewRoom,
-    joinRoom 
+    joinRoom,
+    directMessages,
+    socketId,
   } = useSocket();
+
+  const [openPrivate, setOpenPrivate] = useState([]); // array of peer objects {id, username}
+
+  const openPrivateChat = (user) => {
+    if (!user || user.id === socketId) return;
+    setOpenPrivate((prev) => {
+      if (prev.find((p) => p.id === user.id)) return prev;
+      return [...prev, user];
+    });
+  };
+
+  const closePrivateChat = (peerId) => {
+    setOpenPrivate((prev) => prev.filter((p) => p.id !== peerId));
+  };
 
   // Handle room creation
   const handleCreateRoom = (roomName) => {
@@ -74,7 +91,7 @@ const Chat = ({ username, onLogout }) => {
           
           {/* Users section */}
           <div className="flex-1 overflow-y-auto p-4">
-            <UserList users={users} sendPrivateMessage={sendPrivateMessage} />
+            <UserList users={users} sendPrivateMessage={sendPrivateMessage} onOpenPrivate={openPrivateChat} />
           </div>
         </div>
 
@@ -86,6 +103,18 @@ const Chat = ({ username, onLogout }) => {
             onSendMessage={sendMessage}
             onSetTyping={setTyping}
           />
+        </div>
+        {/* Private chats container */}
+        <div className="flex">
+          {openPrivate.map((peer) => (
+            <PrivateChat
+              key={peer.id}
+              peer={peer}
+              messages={directMessages[peer.id] || []}
+              onSend={(to, text) => sendPrivateMessage(to, text)}
+              onClose={closePrivateChat}
+            />
+          ))}
         </div>
       </main>
     </div>
