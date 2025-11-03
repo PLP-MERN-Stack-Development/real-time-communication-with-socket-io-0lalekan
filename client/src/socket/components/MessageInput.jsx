@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
 
-const MessageInput = ({ onSendMessage, onSetTyping }) => {
+const MessageInput = ({ onSendMessage, onSetTyping, onSendAttachment }) => {
   const [message, setMessage] = useState('');
   const typingTimeoutRef = useRef(null);
+  const fileRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -40,6 +41,19 @@ const MessageInput = ({ onSendMessage, onSetTyping }) => {
       className="flex w-full flex-shrink-0 items-center gap-3 border-t border-gray-700 bg-gray-900 p-4"
       onSubmit={handleSubmit}
     >
+      <input ref={fileRef} type="file" className="hidden" onChange={async (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (f) {
+          // prefer dedicated onSendAttachment prop if provided
+          if (typeof onSendAttachment === 'function') {
+            onSendAttachment(f);
+          } else if (typeof onSendMessage === 'function' && onSendMessage.sendAttachment) {
+            onSendMessage.sendAttachment(f);
+          }
+        }
+        e.target.value = null;
+      }} />
+      <button type="button" onClick={() => fileRef.current?.click()} className="rounded bg-gray-700 px-3 py-2 text-gray-200">Attach</button>
       <input
         type="text"
         placeholder="Type a message..."

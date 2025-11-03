@@ -1,5 +1,25 @@
 import { useEffect, useRef } from 'react';
 import { socket } from '../socket'; // Import the raw socket instance
+import { useMemo } from 'react';
+
+const AttachmentRenderer = ({ msg }) => {
+  // msg.data may be ArrayBuffer or base64; create blob URL
+  try {
+    if (!msg.data) return null;
+    const blob = new Blob([msg.data], { type: msg.mime || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    if ((msg.mime || '').startsWith('image/')) {
+      return <img src={url} alt={msg.filename} className="max-w-full rounded" />;
+    }
+    return (
+      <a href={url} download={msg.filename} className="text-sm text-blue-300 underline">
+        Download {msg.filename}
+      </a>
+    );
+  } catch (e) {
+    return null;
+  }
+};
 
 const MessageList = ({ messages }) => {
   const messagesEndRef = useRef(null);
@@ -34,7 +54,7 @@ const MessageList = ({ messages }) => {
 
         const isSent = msg.senderId === mySocketId;
 
-        // Private Message
+  // Private Message
         if (msg.isPrivate) {
           return (
             <div
@@ -46,7 +66,14 @@ const MessageList = ({ messages }) => {
                   <span className="font-bold text-purple-300">{isSent ? 'You' : msg.sender}</span>
                   <span className="text-xs text-purple-300">(Private)</span>
                 </div>
-                <p className="text-white">{msg.message}</p>
+                <div>
+                  {msg.message && <p className="text-white">{msg.message}</p>}
+                  {msg.filename && (
+                    <div className="mt-2">
+                      <AttachmentRenderer msg={msg} />
+                    </div>
+                  )}
+                </div>
                 <span className="float-right mt-1 text-xs text-gray-400">
                   {formatTimestamp(msg.timestamp)}
                 </span>
@@ -73,7 +100,14 @@ const MessageList = ({ messages }) => {
                   {msg.sender}
                 </div>
               )}
-              <p>{msg.message}</p>
+              <div>
+                {msg.message && <p>{msg.message}</p>}
+                {msg.filename && (
+                  <div className="mt-2">
+                    <AttachmentRenderer msg={msg} />
+                  </div>
+                )}
+              </div>
               <span className="float-right mt-1 text-xs text-gray-400">
                 {formatTimestamp(msg.timestamp)}
               </span>

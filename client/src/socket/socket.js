@@ -64,6 +64,21 @@ export const useSocket = () => {
     }
   };
 
+  // Send an attachment (room or private). `options` can contain { roomId, to }
+  const sendAttachment = async (file, options = {}) => {
+    if (!socket.connected || !file) return;
+    // Read file as ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    const payload = {
+      filename: file.name,
+      mime: file.type,
+      buffer: arrayBuffer,
+      roomId: options.roomId,
+      to: options.to,
+    };
+    socket.emit('send_attachment', payload);
+  };
+
   // Create a new room
   const createNewRoom = (roomName) => {
     if (socket.connected) {
@@ -103,6 +118,61 @@ export const useSocket = () => {
     const onReceiveMessage = (message) => {
       setLastMessage(message);
       setMessages((prev) => [...prev, message]);
+      // show notification and sound
+      try {
+        if (document.hidden && Notification.permission === 'granted') {
+          new Notification(`${message.isPrivate ? 'Private' : 'New'} message`, {
+            body: message.system ? message.message : `${message.sender}: ${message.message}`,
+          });
+        }
+      } catch (e) {}
+      // simple beep
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 1000;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.2);
+        setTimeout(() => { try { o.stop(); ctx.close(); } catch(e){} }, 300);
+      } catch (e) {}
+    };
+
+    const onReceiveAttachment = (attachment) => {
+      // For room attachments, append to messages; for private, store in directMessages
+      if (attachment.isPrivate && attachment.to) {
+        const peerId = (attachment.senderId === socket.id) ? attachment.to : attachment.senderId;
+        setDirectMessages((prev) => {
+          const conv = prev[peerId] ? [...prev[peerId]] : [];
+          conv.push(attachment);
+          return { ...prev, [peerId]: conv };
+        });
+      } else {
+        setMessages((prev) => [...prev, attachment]);
+      }
+      // Notify user
+      try {
+        if (document.hidden && Notification.permission === 'granted') {
+          new Notification(`${attachment.isPrivate ? 'Private' : 'New'} attachment`, {
+            body: `${attachment.sender}: ${attachment.filename}`,
+          });
+        }
+      } catch (e) {}
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.value = 900;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.22);
+        setTimeout(() => { try { o.stop(); ctx.close(); } catch(e){} }, 300);
+      } catch (e) {}
     };
 
     const onPrivateMessage = (message) => {
@@ -116,6 +186,23 @@ export const useSocket = () => {
         conv.push(message);
         return { ...prev, [peerId]: conv };
       });
+      try {
+        if (document.hidden && Notification.permission === 'granted') {
+          new Notification(`Private message from ${message.sender}`, { body: message.message });
+        }
+      } catch (e) {}
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 1200;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+        setTimeout(() => { try { o.stop(); ctx.close(); } catch(e){} }, 250);
+      } catch (e) {}
     };
 
     // User events
@@ -166,6 +253,7 @@ export const useSocket = () => {
     socket.on('disconnect', onDisconnect);
     socket.on('receive_message', onReceiveMessage);
   socket.on('private_message', onPrivateMessage);
+  socket.on('receive_attachment', onReceiveAttachment);
     socket.on('user_list', onUserList);
     socket.on('user_joined', onUserJoined);
     socket.on('user_left', onUserLeft);
@@ -179,11 +267,18 @@ export const useSocket = () => {
       socket.off('disconnect', onDisconnect);
       socket.off('receive_message', onReceiveMessage);
   socket.off('private_message', onPrivateMessage);
+  socket.off('receive_attachment', onReceiveAttachment);
       socket.off('user_list', onUserList);
       socket.off('user_joined', onUserJoined);
       socket.off('user_left', onUserLeft);
       socket.off('typing_users', onTypingUsers);
       socket.off('room_list', onRoomList);
+      // Request notification permission once connected
+      if (Notification && Notification.permission !== 'granted') {
+        try {
+          Notification.requestPermission();
+        } catch (e) {}
+      }
       socket.off('message_history', onMessageHistory);
     };
   }, []);
@@ -201,6 +296,7 @@ export const useSocket = () => {
     disconnect,
     sendMessage,
     sendPrivateMessage,
+    sendAttachment,
     setTyping,
     createRoom: createNewRoom,
     joinRoom,

@@ -17,6 +17,7 @@ const Chat = ({ username, onLogout }) => {
     sendPrivateMessage, 
     createRoom: createNewRoom,
     joinRoom,
+    sendAttachment,
     directMessages,
     socketId,
   } = useSocket();
@@ -96,12 +97,13 @@ const Chat = ({ username, onLogout }) => {
         </div>
 
         {/* Chat Content */}
-        <div className="flex flex-grow flex-col">
+          <div className="flex flex-grow flex-col">
           <ChatWindow
             messages={messages}
             typingUsers={typingUsers}
             onSendMessage={sendMessage}
             onSetTyping={setTyping}
+            onSendAttachment={sendAttachment}
           />
         </div>
         {/* Private chats container */}
@@ -112,6 +114,7 @@ const Chat = ({ username, onLogout }) => {
               peer={peer}
               messages={directMessages[peer.id] || []}
               onSend={(to, text) => sendPrivateMessage(to, text)}
+              onSendAttachment={(peerId, file) => sendAttachment(file, { to: peerId })}
               onClose={closePrivateChat}
             />
           ))}

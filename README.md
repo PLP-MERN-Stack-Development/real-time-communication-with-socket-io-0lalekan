@@ -1,77 +1,97 @@
 # Real-Time Chat Application with Socket.io
 
-This assignment focuses on building a real-time chat application using Socket.io, implementing bidirectional communication between clients and server.
+This repository is a real-time chat application (server + React client) built for the Week 5 assignment. It demonstrates bidirectional communication using Socket.io and includes several advanced chat features implemented during development.
 
-## Assignment Overview
+## Implemented features (current state)
+- Core:
+  ## Real‑Time Chat App — Week 5 (server + React client)
 
-You will build a chat application with the following features:
-1. Real-time messaging using Socket.io
-2. User authentication and presence
-3. Multiple chat rooms or private messaging
-4. Real-time notifications
-5. Advanced features like typing indicators and read receipts
+  This project implements a real‑time chat application built for the Week 5 assignment. It demonstrates bidirectional communication using Socket.io and includes rooms, private chats, attachments, and desktop notifications.
 
-## Project Structure
+  ### Quick summary of implemented features
+  - Username‑based join/login screen and presence (online users)
+  - Global room chat and multiple named rooms (create / join)
+  - Private one‑to‑one chats (dedicated private chat panels)
+  - Typing indicators and basic reconnection handling
+  - File/image attachments for rooms and private chats
+  - Browser notifications + short sound alert when the tab is hidden
+  - In‑memory message history per room (demo only)
 
-```
-socketio-chat/
-├── client/                 # React front-end
-│   ├── public/             # Static files
-│   ├── src/                # React source code
-│   │   ├── components/     # UI components
-│   │   ├── context/        # React context providers
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── pages/          # Page components
-│   │   ├── socket/         # Socket.io client setup
-│   │   └── App.jsx         # Main application component
-│   └── package.json        # Client dependencies
-├── server/                 # Node.js back-end
-│   ├── config/             # Configuration files
-│   ├── controllers/        # Socket event handlers
-│   ├── models/             # Data models
-│   ├── socket/             # Socket.io server setup
-│   ├── utils/              # Utility functions
-│   ├── server.js           # Main server file
-│   └── package.json        # Server dependencies
-└── README.md               # Project documentation
-```
+  If you need a short demo GIF or screenshots added here, tell me and I'll include them.
 
-## Getting Started
+  ## How this maps to the Week 5 assignment
 
-1. Accept the GitHub Classroom assignment invitation
-2. Clone your personal repository that was created by GitHub Classroom
-3. Follow the setup instructions in the `Week5-Assignment.md` file
-4. Complete the tasks outlined in the assignment
+  Required pieces implemented:
+  - Node + Express server with Socket.io (see `server/server.js`)
+  - React front‑end scaffolded with Vite (`client/`)
+  - Socket.io client integration and a reusable socket hook (`client/src/socket`)
+  - Core chat flows: login, presence, messages with sender & timestamp, typing indicators
 
-## Files Included
+  Advanced features (at least three implemented):
+  - Private messaging (one‑to‑one) using private chat panels
+  - Multiple chat rooms (create and join)
+  - File/image attachments (rooms and private chats)
+  - Desktop/browser notifications and a short sound when messages arrive while unfocused
 
-- `Week5-Assignment.md`: Detailed assignment instructions
-- Starter code for both client and server:
-  - Basic project structure
-  - Socket.io configuration templates
-  - Sample components for the chat interface
+  Not implemented by design (optional / future work):
+  - Persistent server storage (messages and attachments are stored in memory)
+  - Read receipts or advanced delivery acknowledgements
+  - Chunked uploads / large file handling
 
-## Requirements
+  ## Project layout
 
-- Node.js (v18 or higher)
-- npm or yarn
-- Modern web browser
-- Basic understanding of React and Express
+  ass/
+  - client/        # React (Vite) front‑end
+    - public/
+    - src/
+      - socket/    # socket hook, components and helper utilities
+      - App.jsx
+    - package.json
+  - server/        # Node + Express + Socket.io server
+    - server.js
+  - Week5-Assignment.md
 
-## Submission
+  ## Local development (quick start)
 
-Your work will be automatically submitted when you push to your GitHub Classroom repository. Make sure to:
+  Open two terminals (one for server, one for client). On Windows PowerShell:
 
-1. Complete both the client and server portions of the application
-2. Implement the core chat functionality
-3. Add at least 3 advanced features
-4. Document your setup process and features in the README.md
-5. Include screenshots or GIFs of your working application
-6. Optional: Deploy your application and add the URLs to your README.md
+  1) Start the server
 
-## Resources
+  cd server; npm install; npm start
 
-- [Socket.io Documentation](https://socket.io/docs/v4/)
-- [React Documentation](https://react.dev/)
-- [Express.js Documentation](https://expressjs.com/)
-- [Building a Chat Application with Socket.io](https://socket.io/get-started/chat) 
+  2) Start the client
+
+  cd client; npm install; npm run dev
+
+  Open the URL Vite prints (usually http://localhost:5173) in two browser windows to test multi‑user flows.
+
+  ## Main user flows to test
+
+  - Join: enter a username on the join screen and click Join.
+  - Rooms: create a room from the Rooms panel and click it to join — messages and attachments are scoped to the room.
+  - Private chat: click a user in the Online Users list to open a private chat panel. Messages and attachments sent here go only to the selected peer.
+  - Attachments: use the Attach button in the message input to send a file or image.
+  - Notifications: allow browser notifications when prompted — if the tab is hidden the app shows a notification and plays a short beep for new messages/attachments.
+
+  ## Developer notes & limitations
+
+  - Attachments are transmitted as binary ArrayBuffers and stored in memory on the server for demo purposes. For production, store files in cloud storage (S3, CDN) and exchange URLs.
+  - Message and attachment history is in‑memory per room and resets on server restart.
+  - No chunking for large files; keep attachments small during testing.
+  - Audio autoplay policies may require a user interaction before the short beep will play in some browsers.
+
+  ## Troubleshooting
+
+  - Client fails to connect: ensure the server is running and `VITE_SOCKET_URL` points to the correct address (default: http://localhost:5000).
+  - Missing dependencies: run `npm install` in the folder that reports the error (client or server).
+  - Socket events duplicated or stale listeners: make sure you're running the latest client build and that you haven't opened multiple tabs connected with the same username; the client hook performs listener cleanup on disconnect.
+
+  If you hit an error, copy the server and client console output and paste it here and I will help debug.
+
+ ## Screenshots / Demo
+ ![alt text](image.png)
+ ![alt text](image-1.png)
+ ![alt text](image-2.png)
+ ![alt text](image-3.png)
+  ---
+

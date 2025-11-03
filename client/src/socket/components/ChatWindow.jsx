@@ -1,7 +1,7 @@
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 
-const ChatWindow = ({ messages, typingUsers, onSendMessage, onSetTyping }) => {
+const ChatWindow = ({ messages, typingUsers, onSendMessage, onSetTyping, onSendAttachment }) => {
   // Create typing status text
   const typingText =
     typingUsers.length > 0
@@ -21,7 +21,7 @@ const ChatWindow = ({ messages, typingUsers, onSendMessage, onSetTyping }) => {
       </div>
       
       {/* MessageInput is fixed at the bottom */}
-      <MessageInput onSendMessage={onSendMessage} onSetTyping={onSetTyping} />
+  <MessageInput onSendMessage={onSendMessage} onSetTyping={onSetTyping} onSendAttachment={onSendAttachment} />
     </>
   );
 };

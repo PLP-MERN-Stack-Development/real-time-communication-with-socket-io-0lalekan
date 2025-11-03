@@ -143,6 +143,35 @@ io.on('connection', (socket) => {
     socket.emit('private_message', messageData);
   });
 
+  // Handle attachments (room or private)
+  socket.on('send_attachment', (payload) => {
+    // payload: { filename, mime, buffer, roomId?, to? }
+    const attachment = {
+      id: Date.now(),
+      sender: users[socket.id]?.username || 'Anonymous',
+      senderId: socket.id,
+      filename: payload.filename,
+      mime: payload.mime,
+      data: payload.buffer, // binary
+      timestamp: new Date().toISOString(),
+      isPrivate: !!payload.to,
+      to: payload.to || null,
+      roomId: payload.roomId || currentRoom,
+    };
+
+    if (attachment.isPrivate && attachment.to) {
+      // send to recipient and sender
+      socket.to(attachment.to).emit('receive_attachment', attachment);
+      socket.emit('receive_attachment', attachment);
+    } else {
+      // room attachment
+      if (rooms[attachment.roomId]) {
+        rooms[attachment.roomId].messages.push(attachment);
+        io.to(attachment.roomId).emit('receive_attachment', attachment);
+      }
+    }
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
     if (users[socket.id]) {
