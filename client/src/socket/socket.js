@@ -24,15 +24,19 @@ export const useSocket = () => {
 
   // Connect to socket server
   const connect = (username) => {
-    socket.connect();
-    if (username) {
-      socket.emit('user_join', username);
+    if (!socket.connected) {
+      socket.connect();
+      if (username) {
+        socket.emit('user_join', username);
+      }
     }
   };
 
   // Disconnect from socket server
   const disconnect = () => {
-    socket.disconnect();
+    if (socket.connected) {
+      socket.disconnect();
+    }
   };
 
   // Send a message
@@ -78,7 +82,6 @@ export const useSocket = () => {
     };
 
     const onUserJoined = (user) => {
-      // You could add a system message here
       setMessages((prev) => [
         ...prev,
         {
@@ -91,7 +94,6 @@ export const useSocket = () => {
     };
 
     const onUserLeft = (user) => {
-      // You could add a system message here
       setMessages((prev) => [
         ...prev,
         {

@@ -1,35 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// client/src/App.jsx
+
+import { useState, useEffect } from 'react';
+import { useSocket } from './socket/socket';
+import Login from './socket/components/Login';
+import Chat from './socket/components/Chat';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [username, setUsername] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { connect, disconnect, isConnected } = useSocket();
+
+  const handleLogin = (name) => {
+    if (name) {
+      setUsername(name);
+      setIsLoggedIn(true);
+    }
+  };
+
+  const handleLogout = () => {
+    disconnect();
+    setIsLoggedIn(false);
+    setUsername('');
+  };
+
+  // Connect to socket when user logs in
+  useEffect(() => {
+    if (isLoggedIn && username) {
+      connect(username);
+    }
+    return () => {
+      disconnect();
+    };
+  }, [isLoggedIn, username]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    // Main app container, centered on screen
+    <div className="flex h-screen w-full items-center justify-center bg-gray-900 p-4">
+      {/* Chat application wrapper */}
+      <div className="flex h-full w-full max-w-5xl max-h-[800px] flex-col overflow-hidden rounded-lg border border-gray-700 shadow-2xl">
+        {!isLoggedIn ? (
+          <Login onLogin={handleLogin} />
+        ) : (
+          <Chat username={username} onLogout={handleLogout} />
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
